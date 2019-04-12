@@ -3,98 +3,286 @@
 #include <fstream>
 #include <string>
 
+#define HEAPSIZE 1000
+
 using namespace std;
 
-// --------------------------------------------------------------------------------------------------------------------------------------------------------
-/* IMPLEMENTACJA KOPCA NA TABLICY
- * Źródło: http://mariusz.makuchowski.staff.iiar.pwr.wroc.pl/download/courses/sterowanie.procesami.dyskretnymi/lab.instrukcje/lab04.schrage/heap.demo.v1.5/demoheap.exe
+class Process {
+public:
+    int r, p, q, number;
+    
+    void Print() {
+        cout << endl << "Numer zadania: " << number << endl <<
+        "r: " << r << " p: " << p << " q: " << q << endl;
+    }
+};
+
+// ------------------------------- Algorytm Schrage -------------------------------------------------------------------------------------------------------------------
+/* Dane:
+ * N - liczba zadań
+ * R[i] - termin dostępności i-tego zadania
+ * P[i] - czas wykonania i-tego zadania
+ * Q[i] - czas dostarczenia i-tego zadania
+ *
+ * Szukane:
+ * Permutacja wykonania zadań na maszynie, Cmax - maksymalny z terminów dostarczenia zadań
+ *
+ */
+void Schrage(Process *Process_Array, int n);
+
+// ------------------------- Implementacja kopca na tablicy -----------------------------------------------------------------------------------------------------------
+/* Źródło: http://mariusz.makuchowski.staff.iiar.pwr.wroc.pl/download/courses/sterowanie.procesami.dyskretnymi/lab.instrukcje/lab04.schrage/heap.demo.v1.5/demoheap.exe
  * Autor: Dr inż. Mariusz Makuchowski
  * Modyfikacje:
- * - stworzenie klasy BinaryHeap
- * - dodanie metody Print()
+ * - stworzenie klasy ProcessPriorityQueue
+ * - dodanie metody Print(), isEmpty()
  * - zmiana nazw niektórych zmiennych
  * Autorzy modyfikacji: Michał Nowak i Mariusz Perskawiec
  */
 
-class BinaryHeap {
-
+class ProcessPriorityQueue {
+    
 private:
-
-    int *array;
+    
+    Process *array;
     int ActualSize;
     int HeapSize;
-
+    bool maxHeap;
+    char priority;
+    
 public:
-
-    BinaryHeap(int _heapSize) {
+    
+    ProcessPriorityQueue(int _heapSize, char _priority, bool maxheap) {
         ActualSize = 0;
         HeapSize = _heapSize - 1;
-        array = new int[HeapSize];
+        array = new Process[HeapSize];
+        maxHeap = maxheap;
+        priority = _priority;
     }
-
-    void ShiftDown(int node);
-    void ShiftUp(int node);
+    
+    void ShiftDownMax(int node);
+    void ShiftUpMax(int node);
+    void ShiftDownMin(int node);
+    void ShiftUpMin(int node);
     void Make();
     void HeapSort();
-
-    void Push(int value);
+    
+    void Push(Process value);
     void Pop();
-
+    
+    bool isEmpty();
     void Print();
+
 };
 
-void BinaryHeap::ShiftDown(int node){
-
+void ProcessPriorityQueue::ShiftDownMax(int node){
+    
     int next = 2 * node;
-
+    
     while (next <= ActualSize) {
-
-        if (next < ActualSize && array[next] < array[next + 1]) {
-            next++;
+        
+        if (priority == 'r') {
+            
+            if ( (next < ActualSize && (array[next].q < array[next+1].q) ) ) {
+                next++;
+            }
+            
+            if (array[node].q < array[next].q) {
+                swap(array[node], array[next]);
+                node = next;
+                next *= 2;
+            }
+            else {
+                next = ActualSize + 1;
+            }
         }
+        else if (priority == 'p') {
+            
+            if ( (next < ActualSize && (array[next].p < array[next+1].p) ) ) {
+                next++;
+            }
+            
+            if (array[node].p < array[next].p) {
+                swap(array[node], array[next]);
+                node = next;
+                next *= 2;
+            }
+            else {
+                next = ActualSize + 1;
+            }
+        }
+        else if (priority == 'q') {
+            
+            if ( (next < ActualSize && (array[next].q < array[next+1].q) ) ) {
+                next++;
+            }
+            
+            if (array[node].q < array[next].q) {
+                swap(array[node], array[next]);
+                node = next;
+                next *= 2;
+            }
+            else {
+                next = ActualSize + 1;
+            }
+        }
+    }
+}
 
-        if (array[node] < array[next]) {
+void ProcessPriorityQueue::ShiftUpMax(int node){
+    
+    int next = node / 2;
+    
+    if (priority == 'r') {
+        
+        while ( (node > 1) && (array[next].r < array[node].r) ) {
             swap(array[node], array[next]);
             node = next;
-            next *= 2;
+            next /= 2;
         }
-        else {
-            next = ActualSize + 1;
+    }
+    else if (priority == 'p') {
+        
+        while ( (node > 1) && (array[next].p < array[node].p) ) {
+            swap(array[node], array[next]);
+            node = next;
+            next /= 2;
+        }
+    }
+    else if (priority == 'q') {
+        
+        while ( (node > 1) && (array[next].q < array[node].q) ) {
+            swap(array[node], array[next]);
+            node = next;
+            next /= 2;
         }
     }
 }
 
-void BinaryHeap::ShiftUp(int node){
+void ProcessPriorityQueue::ShiftDownMin(int node){
+    
+    int next = 2 * node;
+    
+    while (next <= ActualSize) {
+        
+        if (priority == 'r') {
+            
+            if ( (next < ActualSize && (array[next].q > array[next+1].q) ) ) {
+                next++;
+            }
+            
+            if (array[node].q > array[next].q) {
+                swap(array[node], array[next]);
+                node = next;
+                next *= 2;
+            }
+            else {
+                next = ActualSize + 1;
+            }
+        }
+        else if (priority == 'p') {
+            
+            if ( (next < ActualSize && (array[next].p > array[next+1].p) ) ) {
+                next++;
+            }
+            
+            if (array[node].p > array[next].p) {
+                swap(array[node], array[next]);
+                node = next;
+                next *= 2;
+            }
+            else {
+                next = ActualSize + 1;
+            }
+        }
+        else if (priority == 'q') {
+            
+            if ( (next < ActualSize && (array[next].q > array[next+1].q) ) ) {
+                next++;
+            }
+            
+            if (array[node].q > array[next].q) {
+                swap(array[node], array[next]);
+                node = next;
+                next *= 2;
+            }
+            else {
+                next = ActualSize + 1;
+            }
+        }
+    }
+}
 
+void ProcessPriorityQueue::ShiftUpMin(int node){
+    
     int next = node / 2;
-
-    while ( (node > 1) && (array[next] < array[node]) ) {
-        swap(array[node], array[next]);
-        node = next;
-        next /= 2;
+    
+    if (priority == 'r') {
+        
+        while ( (node > 1) && (array[next].r > array[node].r) ) {
+            swap(array[node], array[next]);
+            node = next;
+            next /= 2;
+        }
+    }
+    else if (priority == 'p') {
+        
+        while ( (node > 1) && (array[next].p > array[node].p) ) {
+            swap(array[node], array[next]);
+            node = next;
+            next /= 2;
+        }
+    }
+    else if (priority == 'q') {
+        
+        while ( (node > 1) && (array[next].q > array[node].q) ) {
+            swap(array[node], array[next]);
+            node = next;
+            next /= 2;
+        }
     }
 }
 
-void BinaryHeap::Make() {
-
-    for (int count = ActualSize / 2; count > 0; count--) {
-        ShiftDown(count);
+void ProcessPriorityQueue::Make() {
+    
+    if (maxHeap == true) {
+        
+        for (int count = ActualSize / 2; count > 0; count--) {
+            ShiftDownMax(count);
+        }
+    }
+    else if (maxHeap == false) {
+        for (int count = ActualSize / 2; count > 0; count--) {
+            ShiftDownMin(count);
+        }
     }
 }
 
-void BinaryHeap::Push(int value) {
-
+void ProcessPriorityQueue::Push(Process value) {
+    
     array[++ActualSize] = value;
-    ShiftUp(ActualSize);
+    
+    if (maxHeap == true) {
+        ShiftUpMax(ActualSize);
+    }
+    else {
+        ShiftUpMin(ActualSize);
+    }
 }
 
-void BinaryHeap::Pop() {
-
+void ProcessPriorityQueue::Pop() {
+    
     swap(array[1], array[ActualSize--]);
-    ShiftDown(1);
+    
+    if (maxHeap == true) {
+        ShiftDownMax(1);
+    }
+    else {
+        ShiftDownMin(1);
+    }
 }
 
-void BinaryHeap::HeapSort() {
+void ProcessPriorityQueue::HeapSort() {
     
     Make();
     
@@ -103,45 +291,86 @@ void BinaryHeap::HeapSort() {
     }
 }
 
-void BinaryHeap::Print() {
-
+void ProcessPriorityQueue::Print() {
+    
     cout << endl << "Heap elements: " << endl;
-
+    
     for (int count = 1; count <= ActualSize ; count++) {
-        cout << count << ". "<< array[count] << endl;
+        array[count].Print();
     }
     
     cout << endl;
 }
 
+// ------------------------- Algorytm Schrage z podziałem -------------------------------------------------------------------------------------------------
+
+
 // --------------------------------------------------------------------------------------------------------------------------------------------------------
 
 int main(void) {
-
-    // TEST KOPCA
-    int heap_size = 10;
-
-    BinaryHeap heap(heap_size);
-
-    heap.Push(2);
-    heap.Push(12);
-    heap.Push(9);
-    heap.Push(1);
-    heap.Push(4);
-    heap.Push(7);
-    heap.Push(90);
-    heap.Push(11);
-
-    heap.Print();
     
-    heap.Pop();
-    heap.Pop();
+    int N = 0; // Liczba danych
+    string s;
     
-    heap.Print();
-
-	system("pause");
-
-	return 0;
+    ifstream data("schr.data.txt");
+    
+    while( s != "data.001:" ) {
+        data >> s;
+    }
+    
+    data >> N;
+    
+    Process *Process_Array = new Process[N];
+    
+    cout << "Wczytane zadania: " << endl;
+    for(int i = 1; i <= N; i++) {
+        
+        Process temp_process;
+        
+        temp_process.number = i;
+        data >> temp_process.r >> temp_process.p >> temp_process.q;
+        
+        Process_Array[i] = temp_process;
+        Process_Array[i].Print();
+    }
+    
+    Schrage(Process_Array,N);
+    
+    //system("pause");
+    
+    return 0;
 }
 
 // --------------------------------------------------------------------------------------------------------------------------------------------------------
+
+void Schrage(Process *Process_Array, int n) {
+    
+    // krok 1: inicjacja wszystkich zmiennych
+    
+    int t = 0;           // <- chwila czasowa
+    int k = 0;           // <- pozycja w permutacji
+    int Cmax = 0;        // <- maksymalny z terminów dostarczenia zadań
+    ProcessPriorityQueue N(HEAPSIZE, 'q', true); // <- zbiór zadań nieuszeregowanych
+    ProcessPriorityQueue G(HEAPSIZE, 'q', true); // <- zbiór zadań gotowych do realizacji
+
+    N.Push(Process_Array[1]);
+    N.Push(Process_Array[2]);
+    N.Push(Process_Array[3]);
+    N.Push(Process_Array[4]);
+    N.Push(Process_Array[5]);
+    N.Push(Process_Array[6]);
+    N.Push(Process_Array[7]);
+    N.Push(Process_Array[8]);
+    
+    cout << "Kolejka priorytetowa G (priorytet najwieksze q)" << endl;
+    N.Print();
+    
+    N.Pop();
+    N.Pop();
+    N.Pop();
+    N.Pop();
+    N.Pop();
+    
+    cout << "Kolejka priorytetowa G (priorytet najwieksze q)" << endl;
+    N.Print();
+}
