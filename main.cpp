@@ -29,8 +29,34 @@ public:
  * Szukane:
  * Permutacja wykonania zadań na maszynie, Cmax - maksymalny z terminów dostarczenia zadań
  *
+ * Struktury pomocnicze:
+ * t – chwila czasowa,
+ * k – pozycja w permutacji π
+ * N – zbiór zadań nieuszeregowanych
+ * G – zbiór zadań gotowych do realizacji
  */
 int Schrage(Process *Process_Array, int n);
+
+// ------------------------- Algorytm Schrage z podziałem -------------------------------------------------------------------------------------------------------------
+// Algorytm zaimplementowany przy pomocy pseudokodu pochodzacego ze strony:
+// http://mariusz.makuchowski.staff.iiar.pwr.wroc.pl/download/courses/sterowanie.procesami.dyskretnymi/lab.instrukcje/lab04.schrage/schr.literatura/a.schrage.pdf
+/* Dane:
+ * N - liczba zadań
+ * R[i] - termin dostępności i-tego zadania
+ * P[i] - czas wykonania i-tego zadania
+ * Q[i] - czas dostarczenia i-tego zadania
+ *
+ * Szukane:
+ * Permutacja wykonania zadań na maszynie, Cmax - maksymalny z terminów dostarczenia zadań
+ *
+ * Struktury pomocnicze:
+ * t – chwila czasowa,
+ * k – pozycja w permutacji π
+ * l - aktualne wykonywane zadanie
+ * N – zbiór zadań nieuszeregowanych
+ * G – zbiór zadań gotowych do realizacji
+ */
+int SchrageWithParity(Process *Process_Array, int n);
 
 // ------------------------- Implementacja kolejki priorytetowej ------------------------------------------------------------------------------------------------------
 /* Źródło: http://mariusz.makuchowski.staff.iiar.pwr.wroc.pl/download/courses/sterowanie.procesami.dyskretnymi/lab.instrukcje/lab04.schrage/heap.demo.v1.5/demoheap.exe
@@ -331,7 +357,7 @@ int main(void) {
     
     ifstream data("schr.data.txt");
     
-    while( s != "data.001:" ) {
+    while( s != "data.000:" ) {
         data >> s;
     }
     
@@ -352,6 +378,7 @@ int main(void) {
     }
     
     Schrage(Process_Array,N);
+    SchrageWithParity(Process_Array,N);
     
     //system("pause");
     
@@ -412,12 +439,95 @@ int Schrage(Process *Process_Array, int n) {
         }
     }
     
-    cout << endl << "------ Wyznaczona permutacja PI  ---------" << endl;
+    cout << endl << "------ Wyznaczona permutacja PI Schrage bez podziału  ---------" << endl;
     for (int i = 1; i <= n; i++) {
         PI[i].Print();
     }
     
     cout << endl << "Cmax wyznaczone za pomoca Schrage bez podziału: " << Cmax << endl;
+    
+    return Cmax;
+}
+
+// --------------------------------------------------------------------------------------------------------------------------------------------------------
+
+int SchrageWithParity(Process *Process_Array, int n) {
+    
+    // krok 1: inicjacja wszystkich zmiennych
+    int k = 1;                                      // <- pozycja w permutacji
+    int Cmax = 0;                                   // <- maksymalny z terminów dostarczenia zadań
+    Process l;                                      // <- aktualne wykonywane zadanie
+    l.r = 0; l.p = 0; l.q = 0;
+    Process *PI = Process_Array;                    // <- permutacje zadań
+    ProcessPriorityQueue N(100, 'r', false);        // <- zbiór zadań nieuszeregowanych
+    ProcessPriorityQueue G(100, 'q', true);         // <- zbiór zadań gotowych do realizacji
+    
+    for (int i = 1; i <= n; i++) {
+        N.Push(PI[i]);
+    }
+    
+    int t = N.Top().r;  // <- chwila czasowa
+    
+    // krok 3 i 4: ze zbioru zadań jeszcze nieuszeregowanych usuwane są i umieszczane w zbiorze G
+    // zadania gotowe do realizacji w chwili t, tj. zadania których termin dostępności ri jest
+    // mniejszy lub równy chwili t.
+    while ( (G.isEmpty() == false) || (N.isEmpty() == false) ) {
+        
+        while ( (N.isEmpty() == false) && (N.Top().r <= t) ) {
+            
+            Process e = N.Top();
+            G.Push(e);
+            N.Pop();
+            
+            // krok 5: W kroku tym, za każdy razem gdy do zbioru zadań gotowych dodawane jest zadanie (e),
+            // sprawdzane jest czy ma większy czas dostarczenia od zadania (l) aktualnie znajdującego się na
+            // maszynie. Jeżeli tak to wykonywanie zadania l natychmiast jest przerywane, a pozostała część
+            // zadania tj. o czasie trwania t−re ponownie wkładana jest do zbioru zadań gotowych do realizacji.
+            if (e.q > l.q) {
+                
+                l.p = t - e.r;
+                t = e.r;
+                
+                if (l.p > 0) {
+                    
+                    G.Push(l);
+                }
+            }
+        }
+        
+        // krok 6: sprawdzane jest czy zbiór zadań gotowych w chwili t nie jest pusty. Jeżeli jest
+        // to chwila czasowa t przesuwana jest do momentu dostępności najwcześniejszego zadania ze
+        // zbioru N i wznawiany jest proces aktualizowania zbioru zadań gotowych.
+        if (G.isEmpty() == true) {
+            
+            t = N.Top().r;
+        }
+        else {
+            // krok 8: ze zboru zadań gotowych wyznaczane jest zadanie o największym qi, zadanie
+            // to usuwane jest ze zbioru G
+            Process e = G.Top();
+            G.Pop();
+            
+            // krok 9: zwiększany jest o jeden indeks k określający pozycję w permutacji PI,
+            // zadanie e wstawiane jest na tą pozycję, chwila czasowa t zwiększana jest o czas
+            // realizacji zadania, uaktualniany jest najpóźniejszy moment dostarczenia Cmax, oraz
+            // uaktualniana jest zmienna l
+            PI[k] = e;
+            l = e;
+            t += PI[k].p;
+            
+            Cmax = max(Cmax, t + PI[k].q);
+            
+            k++;
+        }
+    }
+    
+    cout << endl << "------ Wyznaczona permutacja PI Schrage z podziałem ---------" << endl;
+    for (int i = 1; i <= n; i++) {
+        PI[i].Print();
+    }
+    
+    cout << endl << "Cmax wyznaczone za pomoca Schrage z podziałem: " << Cmax << endl;
     
     return Cmax;
 }
