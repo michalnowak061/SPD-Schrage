@@ -3,7 +3,7 @@
 #include <fstream>
 #include <string>
 
-#define HEAPSIZE 1000
+#define HEAPSIZE 10000
 
 using namespace std;
 
@@ -18,6 +18,8 @@ public:
 };
 
 // ------------------------------- Algorytm Schrage -------------------------------------------------------------------------------------------------------------------
+// Algorytm zaimplementowany przy pomocy pseudokodu pochodzacego ze strony:
+// http://mariusz.makuchowski.staff.iiar.pwr.wroc.pl/download/courses/sterowanie.procesami.dyskretnymi/lab.instrukcje/lab04.schrage/schr.literatura/a.schrage.pdf
 /* Dane:
  * N - liczba zadań
  * R[i] - termin dostępności i-tego zadania
@@ -28,9 +30,9 @@ public:
  * Permutacja wykonania zadań na maszynie, Cmax - maksymalny z terminów dostarczenia zadań
  *
  */
-void Schrage(Process *Process_Array, int n);
+int Schrage(Process *Process_Array, int n);
 
-// ------------------------- Implementacja kopca na tablicy -----------------------------------------------------------------------------------------------------------
+// ------------------------- Implementacja kolejki priorytetowej ------------------------------------------------------------------------------------------------------
 /* Źródło: http://mariusz.makuchowski.staff.iiar.pwr.wroc.pl/download/courses/sterowanie.procesami.dyskretnymi/lab.instrukcje/lab04.schrage/heap.demo.v1.5/demoheap.exe
  * Autor: Dr inż. Mariusz Makuchowski
  * Modyfikacje:
@@ -54,7 +56,7 @@ public:
     
     ProcessPriorityQueue(int _heapSize, char _priority, bool maxheap) {
         ActualSize = 0;
-        HeapSize = _heapSize - 1;
+        HeapSize = _heapSize;
         array = new Process[HeapSize];
         maxHeap = maxheap;
         priority = _priority;
@@ -69,6 +71,7 @@ public:
     
     void Push(Process value);
     void Pop();
+    Process Top();
     
     bool isEmpty();
     void Print();
@@ -83,11 +86,11 @@ void ProcessPriorityQueue::ShiftDownMax(int node){
         
         if (priority == 'r') {
             
-            if ( (next < ActualSize && (array[next].q < array[next+1].q) ) ) {
+            if ( (next < ActualSize && (array[next].r < array[next+1].r) ) ) {
                 next++;
             }
             
-            if (array[node].q < array[next].q) {
+            if (array[node].r < array[next].r) {
                 swap(array[node], array[next]);
                 node = next;
                 next *= 2;
@@ -167,11 +170,11 @@ void ProcessPriorityQueue::ShiftDownMin(int node){
         
         if (priority == 'r') {
             
-            if ( (next < ActualSize && (array[next].q > array[next+1].q) ) ) {
+            if ( (next < ActualSize && (array[next].r > array[next+1].r) ) ) {
                 next++;
             }
             
-            if (array[node].q > array[next].q) {
+            if (array[node].r > array[next].r) {
                 swap(array[node], array[next]);
                 node = next;
                 next *= 2;
@@ -265,7 +268,7 @@ void ProcessPriorityQueue::Push(Process value) {
     if (maxHeap == true) {
         ShiftUpMax(ActualSize);
     }
-    else {
+    else if (maxHeap == false){
         ShiftUpMin(ActualSize);
     }
 }
@@ -277,9 +280,18 @@ void ProcessPriorityQueue::Pop() {
     if (maxHeap == true) {
         ShiftDownMax(1);
     }
-    else {
+    else if(maxHeap == false){
         ShiftDownMin(1);
     }
+}
+
+Process ProcessPriorityQueue::Top() {
+    
+    if (ActualSize == 0) {
+        perror("Niedozwolona operacja TOP");
+    }
+    
+    return array[1];
 }
 
 void ProcessPriorityQueue::HeapSort() {
@@ -289,6 +301,14 @@ void ProcessPriorityQueue::HeapSort() {
     while ( ActualSize > 0 ) {
         Pop();
     }
+}
+
+bool ProcessPriorityQueue::isEmpty() {
+    
+    if (ActualSize == 0) {
+        return true;
+    }
+    else return false;
 }
 
 void ProcessPriorityQueue::Print() {
@@ -301,9 +321,6 @@ void ProcessPriorityQueue::Print() {
     
     cout << endl;
 }
-
-// ------------------------- Algorytm Schrage z podziałem -------------------------------------------------------------------------------------------------
-
 
 // --------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -322,7 +339,7 @@ int main(void) {
     
     Process *Process_Array = new Process[N];
     
-    cout << "Wczytane zadania: " << endl;
+    cout << "---- Wczytane zadania -----" << endl;
     for(int i = 1; i <= N; i++) {
         
         Process temp_process;
@@ -343,34 +360,66 @@ int main(void) {
 
 // --------------------------------------------------------------------------------------------------------------------------------------------------------
 
-void Schrage(Process *Process_Array, int n) {
+int Schrage(Process *Process_Array, int n) {
     
     // krok 1: inicjacja wszystkich zmiennych
+    int k = 1;                                      // <- pozycja w permutacji
+    int Cmax = 0;                                   // <- maksymalny z terminów dostarczenia zadań
+    Process *PI = Process_Array;                    // <- permutacje zadań
+    ProcessPriorityQueue N(100, 'r', false);        // <- zbiór zadań nieuszeregowanych
+    ProcessPriorityQueue G(100, 'q', true);         // <- zbiór zadań gotowych do realizacji
     
-    int t = 0;           // <- chwila czasowa
-    int k = 0;           // <- pozycja w permutacji
-    int Cmax = 0;        // <- maksymalny z terminów dostarczenia zadań
-    ProcessPriorityQueue N(HEAPSIZE, 'q', true); // <- zbiór zadań nieuszeregowanych
-    ProcessPriorityQueue G(HEAPSIZE, 'q', true); // <- zbiór zadań gotowych do realizacji
-
-    N.Push(Process_Array[1]);
-    N.Push(Process_Array[2]);
-    N.Push(Process_Array[3]);
-    N.Push(Process_Array[4]);
-    N.Push(Process_Array[5]);
-    N.Push(Process_Array[6]);
-    N.Push(Process_Array[7]);
-    N.Push(Process_Array[8]);
+    for (int i = 1; i <= n; i++) {
+        N.Push(PI[i]);
+    }
     
-    cout << "Kolejka priorytetowa G (priorytet najwieksze q)" << endl;
-    N.Print();
+    int t = N.Top().r;  // <- chwila czasowa
     
-    N.Pop();
-    N.Pop();
-    N.Pop();
-    N.Pop();
-    N.Pop();
+    // krok 3 i 4: ze zbioru zadań jeszcze nieuszeregowanych usuwane są i umieszczane w zbiorze G
+    // zadania gotowe do realizacji w chwili t, tj. zadania których termin dostępności ri jest
+    // mniejszy lub równy chwili t.
+    while ( (G.isEmpty() == false) || (N.isEmpty() == false) ) {
+        
+        while ( (N.isEmpty() == false) && (N.Top().r <= t) ) {
+            
+            Process e = N.Top();
+            G.Push(e);
+            N.Pop();
+        }
+        
+        // krok 5: sprawdzane jest czy zbiór zadań gotowych w chwili t nie jest pusty. Jeżeli jest
+        // to chwila czasowa t przesuwana jest do momentu dostępności najwcześniejszego zadania ze
+        // zbioru N i wznawiany jest proces aktualizowania zbioru zadań gotowych.
+        if (G.isEmpty() == true) {
+            
+            t = N.Top().r;
+        }
+        else {
+            // krok 7: ze zboru zadań gotowych wyznaczane jest zadanie o największym qi, zadanie
+            // to usuwane jest ze zbioru G
+            Process e = G.Top();
+            G.Pop();
+            
+            // krok 8: zwiększany jest o jeden indeks k określający pozycję w permutacji PI,
+            // zadanie e wstawiane jest na tą pozycję, chwila czasowa t zwiększana jest o czas
+            // realizacji zadania, uaktualniany jest najpóźniejszy moment dostarczenia Cmax
+            PI[k] = e;
+            t += PI[k].p;
+            
+            Cmax = max(Cmax, t + PI[k].q);
+            
+            k++;
+        }
+    }
     
-    cout << "Kolejka priorytetowa G (priorytet najwieksze q)" << endl;
-    N.Print();
+    cout << endl << "------ Wyznaczona permutacja PI  ---------" << endl;
+    for (int i = 1; i <= n; i++) {
+        PI[i].Print();
+    }
+    
+    cout << endl << "Cmax wyznaczone za pomoca Schrage bez podziału: " << Cmax << endl;
+    
+    return Cmax;
 }
+
+// --------------------------------------------------------------------------------------------------------------------------------------------------------
