@@ -355,9 +355,27 @@ int main(void) {
     int N = 0; // Liczba danych
     string s;
     
+    int number = -1;
+    string data_number;
+    
+    cout << "Podaj numer zestawu zadan od 0-8 > "; cin >> number;
+    if (number == 0) data_number = "data.000:";
+    else if (number == 1) data_number = "data.001:";
+    else if (number == 2) data_number = "data.002:";
+    else if (number == 3) data_number = "data.003:";
+    else if (number == 4) data_number = "data.004:";
+    else if (number == 5) data_number = "data.005:";
+    else if (number == 6) data_number = "data.006:";
+    else if (number == 7) data_number = "data.007:";
+    else if (number == 8) data_number = "data.008:";
+    else {
+        cout << "Niedozwolony numer zestawu. To musi byc liczba z przedzialu 0-8 !" << endl;
+        return -1;
+    }
+    
     ifstream data("schr.data.txt");
     
-    while( s != "data.000:" ) {
+    while( s != data_number ) {
         data >> s;
     }
     
@@ -365,7 +383,6 @@ int main(void) {
     
     Process *Process_Array = new Process[N];
     
-    cout << "---- Wczytane zadania -----" << endl;
     for(int i = 1; i <= N; i++) {
         
         Process temp_process;
@@ -374,13 +391,12 @@ int main(void) {
         data >> temp_process.r >> temp_process.p >> temp_process.q;
         
         Process_Array[i] = temp_process;
-        Process_Array[i].Print();
     }
     
     Schrage(Process_Array,N);
     SchrageWithParity(Process_Array,N);
     
-    //system("pause");
+    system("pause");
     
     return 0;
 }
@@ -482,7 +498,7 @@ int SchrageWithParity(Process *Process_Array, int n) {
             // krok 5: W kroku tym, za każdy razem gdy do zbioru zadań gotowych dodawane jest zadanie (e),
             // sprawdzane jest czy ma większy czas dostarczenia od zadania (l) aktualnie znajdującego się na
             // maszynie. Jeżeli tak to wykonywanie zadania l natychmiast jest przerywane, a pozostała część
-            // zadania tj. o czasie trwania t−re ponownie wkładana jest do zbioru zadań gotowych do realizacji.
+            // zadania tj. o czasie trwania t − re ponownie wkładana jest do zbioru zadań gotowych do realizacji.
             if (e.q > l.q) {
                 
                 l.p = t - e.r;
@@ -523,6 +539,7 @@ int SchrageWithParity(Process *Process_Array, int n) {
     }
     
     cout << endl << "------ Wyznaczona permutacja PI Schrage z podziałem ---------" << endl;
+    
     for (int i = 1; i <= n; i++) {
         PI[i].Print();
     }
